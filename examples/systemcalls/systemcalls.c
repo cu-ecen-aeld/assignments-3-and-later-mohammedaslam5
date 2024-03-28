@@ -1,4 +1,11 @@
 #include "systemcalls.h"
+#include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 /**
  * @param cmd the command to execute with system()
@@ -16,8 +23,14 @@ bool do_system(const char *cmd)
  *   and return a boolean true if the system() call completed with success
  *   or false() if it returned a failure
 */
+    int ret;
 
-    return true;
+    ret = system(cmd);
+
+    if(ret == 0)
+        return true;
+    else
+        return false;
 }
 
 /**
@@ -40,6 +53,10 @@ bool do_exec(int count, ...)
     va_start(args, count);
     char * command[count+1];
     int i;
+    pid_t pid = 0;
+    int ret;
+    int status;
+
     for(i=0; i<count; i++)
     {
         command[i] = va_arg(args, char *);
@@ -59,6 +76,37 @@ bool do_exec(int count, ...)
  *
 */
 
+    pid = fork();
+    if(pid == 0)
+    {
+        //This will be executed in child process.
+        ret = execv(command[0], command);
+        if(ret < 0)
+            exit(1);
+    }
+    else if(pid > 0)
+    {
+        //This will be executed in parent process.
+        ret = wait(&status);
+	if(ret < 0)
+        {
+            return false;
+        }
+
+        if(WIFEXITED(status))
+        {
+            if(WEXITSTATUS(status) == 1)
+            {
+                return false;
+            }
+        }
+    }
+    else
+    {
+        //This will be executed on fork error.
+         return false;
+    }
+
     va_end(args);
 
     return true;
@@ -75,6 +123,11 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
     va_start(args, count);
     char * command[count+1];
     int i;
+    int fd = -1;
+    int ret;
+    pid_t pid = 0;
+    int status;
+
     for(i=0; i<count; i++)
     {
         command[i] = va_arg(args, char *);
@@ -93,6 +146,42 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
  *
 */
 
+    fd = open(outputfile, O_WRONLY|O_TRUNC|O_CREAT, 0644);
+    if(fd < 0)
+        return false;
+
+    pid = fork();
+    if(pid == 0)
+    {
+        //This will be executed in child process.
+        ret = dup2(fd, 1);
+        if(ret < 0)
+            exit(1);
+
+        ret = execv(command[0], command);
+        if(ret < 0)
+            exit(1);
+    }
+    else if(pid > 0)
+    {
+        //This will be executed in parent process.
+        ret = wait(&status);
+        if(WIFEXITED(status))
+        {
+            close(fd);
+            if(WEXITSTATUS(status) == 1)
+            {
+                return false;
+            }
+        }
+    }
+    else
+    {
+        //This will be executed on fork error.
+         return false;
+    }
+
+    close(fd);
     va_end(args);
 
     return true;
