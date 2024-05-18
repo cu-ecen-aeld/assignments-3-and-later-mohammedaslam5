@@ -1,5 +1,5 @@
 
-CROSS_COMPILE=
+CC=
 
 SRCS := $(wildcard *.c)
 OUTFILES := $(SRCS:%.c=%)
@@ -7,7 +7,7 @@ OUTFILES := $(SRCS:%.c=%)
 all: ${OUTFILES}
 
 %: %.c
-	$(CROSS_COMPILE)gcc $< -o $@
+	$(CC) $< -o $@
 
 clean:
 	@echo "Cleaning up...";
