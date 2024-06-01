@@ -7,7 +7,7 @@ OUTFILES := $(SRCS:%.c=%)
 all: ${OUTFILES}
 
 %: %.c
-	$(CC)gcc $< -o $@ $(CFLAGS)
+	$(CC) $< -o $@ $(CFLAGS)
 
 clean:
 	@echo "Cleaning up...";

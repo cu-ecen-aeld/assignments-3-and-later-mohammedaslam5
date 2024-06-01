@@ -85,6 +85,7 @@ int main(int argc, char **argv)
         }
 
 	hints.ai_flags = AI_PASSIVE;
+	hints.ai_family = AF_INET;
 
 	syslog(LOG_INFO, "creating socket");
 	socketfd = socket(AF_INET, SOCK_STREAM, 0);
